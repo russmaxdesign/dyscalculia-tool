@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title> Digits to words </title>
+
+<style>
+body {
+	margin: 0;
+	padding: 2em;
+	font-family: Helvetica, Arial, sans-serif;
+	font-size: 1em;
+	line-height: 1.3;
+	color: #333;
+	background-color: #fff;
+	margin: 0;
+	width: 40em;
+}
+
+h1 {
+	margin: 0 0 1em;
+}
+
+h2 {
+	margin: 0 0 .5em;
+}
+
+p {
+	line-height: 1.4;
+	margin: 0 0 1.5em;
+}
+
+input {
+	border:1px solid hsl(0, 0%, 50%);
+	font:inherit;
+	inline-size:calc(100% - 4px);
+	padding: .5em;
+}
+
+button {
+	background:#fff;
+	border:1px solid hsl(0, 0%, 50%);
+	border-radius:3px;
+	color:inherit;
+	font:inherit;
+	margin:0;
+}
+
+button:disabled {
+	background-color: #ccc;
+	color: #666;
+	cursor: not-allowed;
+	opacity: 0.6;
+}
+
+button:enabled {
+	background:#fff;
+	border:1px solid hsl(0, 0%, 50%);
+	opacity: 1;
+	border-radius:3px;
+	color:inherit;
+	font:inherit;
+	margin:0;
+	cursor: pointer;
+}
+
+#storeIt {
+	display: none;
+}
+
+.current-spoken-word {
+	font-weight: 700;
+	background-color: #ffff99;
+	padding-inline: 0.1em;
+}
+
+#showWords {
+	margin: 1em 0;
+	padding: 1em;
+	background-color: rgba(0,255,255,.3);
+	border: 1px solid rgba(0,255,255,1);
+}
+</style>
+
+<script>
+	"use strict"
+	// The following toggles the speakIt button from disabled to enabled once the showWords paragraph  contains text.
+	document.addEventListener('DOMContentLoaded', function() {
+		const para = document.getElementById('showWords');
+		const buttonWords = document.getElementById('speakIt');
+		const buttonDigits = document.getElementById('speakEach');
+		
+	function updateButton()
+	{
+		const hasContent = para.innerHTML.trim() !== '';
+		// The hasContent variable gets content once the paragraph is not empty
+		buttonWords.disabled = !hasContent;
+		buttonDigits.disabled = !hasContent;
+		// The button is disabled when hasContent is empty
+	}
+	// Initial check
+	updateButton();
+	// Watch for content changes
+	const observer = new MutationObserver(updateButton);
+	observer.observe(para, { childList: true, subtree: true, characterData: true, attributes: true });
+	});
+
+	let choice; //Gets 1 for convert to detailed words and 2 for convert to single words
+	function convertMe(choice)
+	{ // Called when the Submit button is pressed
+		let result; // Gets the number entered by the user
+		let origResult; //Keeps the original entered number in case it contains decimals (they are removed from result variable)
+		let retrieve; // Gets the value returned from any of the functions called to do the conversion
+		let output; // Sends both original and converted results to the page
+		let lengthCheck; // Measures the length of the number entered by the user
+		let decCheck; // Finds the position of the decimal point if there is one
+		let decimals; // Gets any digits to the right of the decimal point
+		let decLengthCheck; // Finds how many digits in decimals
+		let commaCheck; // Looks for any commas
+		let removeComma = ""; //Used to store  values without commas
+		let decOutput = ""; // Receives the converted digits to the right of the decimal point
+		let singles; //Gets number without commas but with decimal point for speaking single digits;
+		let fullLength; // Gets the length including decimals
+		let dollars = ""; // Used for checking for a $ at the start of the number
+		let myTemp; // Used in the following loop
+		clearSpokenWordHighlight();
+		document.getElementById("speakEach").textContent = "Speak each word one at a time";
+		result = document.getElementById("inputNumber").value;
+		// Now holds the number entered by the user
+		origResult = result; // Keeps original entry in case of decimals - they get stripped out of result variable
+		dollars = result.substring(0,1); // Looks for a dollar sign as the first character
+		if(dollars == "$")
+		{
+			result = result.substring(1,); // Removes the dollar sign from the variable
+			dollars = " dollars";
+		}
+		else dollars = "";
+		commaCheck = result.search(/[,]{1}/);
+		// Regular expression search for a comma (,);
+		if(commaCheck > -1)
+		{ //A comma has been found;
+			lengthCheck = result.length; // Gets the length of result variable for the loop count
+			let count = 0;
+			for (let i=0;i<= lengthCheck - 1;i++)
+			{ //Checks each character to see if it is a comma
+				count = count + 1;
+				myTemp = result.substring(i,count);
+				if(myTemp != ",") // It is not a comma
+				{
+					removeComma = removeComma + myTemp; // Adds anything that is not a comma to removeComma
+				}
+			}
+			result = removeComma; // Now result is stripped of commas
+		}
+		document.getElementById("storeIt").innerHTML = result;
+		// The storeIt div holds the number for speaking  digits individually
+		decCheck = result.search(/[.]{1}/);
+		// Regular expression search for a decimal point in results variable
+		if(decCheck != "-1")
+		{ // A decimal point has been found
+			decimals = result.substring(decCheck + 1,);
+			// The decimals variable holds digits to the right of the decimal point 
+			decLengthCheck = decimals.length; // Determines how many digits in the decimals variable
+			result = result.substring(0,decCheck);
+			// The result variable now holds only digits to the left of the decimal point
+			decOutput = decimalFix(decimals, decLengthCheck);
+			// decOutput gets the converted digits to the right of the decimal point returned from decimalFix, including "point"
+		}
+		lengthCheck = result.length; // Gets the length of result variable so as to send to the relevant function
+		if(lengthCheck > 7)
+		{
+			document.getElementById("showWords").innerHTML = "The number before the decimal point cannot be more than seven digits";
+			return;
+		}
+		if(choice == 2)
+		{ // Output will be single words (no hundreds etc)
+			singleWords(lengthCheck, result, decOutput, dollars);
+			return;
+		}
+		if(lengthCheck == 3)
+		{ // A three digit entry is sent to the processNumThree function and similar for four, five etc entries
+			retrieve = processNumThree(result);
+			// The entry converted to words is returned
+			output = retrieve + decOutput + dollars;
+			// The output variable now holds converted material, including decimals if any
+			printOut(origResult, output);
+			// Sends information to the showWords div
+			return
+		}
+		if(lengthCheck == 4)
+		{
+			retrieve = processNumFour(result);
+			output = retrieve + decOutput + dollars;
+			// The output variable now holds converted material, including decimals if any
+			printOut(origResult, output);
+			// Sends information to the showWords div
+			return
+		}
+		if(lengthCheck == 5)
+		{
+			retrieve = processNumFive(result)
+			output = retrieve + decOutput + dollars;
+			// The output variable now holds converted material, including decimals if any
+			printOut(origResult, output);
+			// Sends information to the showWords div
+			return
+		}
+		if(lengthCheck == 6)
+		{ // As above
+			retrieve = processNumSix(result)
+			output =  retrieve + decOutput + dollars;
+			printOut(origResult, output);
+			return
+		}
+		if(lengthCheck == 7)
+		{ //Ditto again
+			retrieve = processNumSeven(result)
+			output = retrieve + decOutput + dollars;
+			printOut(origResult, output);
+			return;
+		}
+		// The following    used if two  digits as all  work done in the function.
+		retrieve = digitsToWords(result);
+		output =  retrieve + decOutput + dollars;
+		printOut(origResult, output);
+	}
+	function singleWords(fullLength, result, decOutput, dollars)
+	{ // This function used for single word output - just needs the loop to process
+		let words = ""; // Used to return the converted result
+		let processNum; // Gets the word(s) returned from the digitsToWords function
+		let count = 0;
+		let myTemp;
+		for (let i=0;i <= fullLength - 1;i++)
+		{
+			count ++;
+			myTemp = result.substring(i,count);
+			if(myTemp != ".")
+			{ // The character is not a decimal point
+				processNum = digitsToWords(myTemp);
+				words = words + processNum + " ";
+			}
+			else
+			{
+				words = words + "point "; // . replaced with point
+			}
+		}
+		words = words + decOutput + dollars; // Everything put together
+		const showWords = document.getElementById("showWords");
+		showWords.textContent = words;
+		showWords.dataset.originalText = words;
+		// Result sent to the page
+	}
+	function  digitsToWords(result)
+	{ // This function does the conversion from digits to words.  It can handle up to four digits directly.
+	// To provide full text and for numbers including decimals this is called for any number beyond two digits.
+		let words = ""; // Holds converted values
+		let num = result; // Holds the value sent to the function
+		let t; // Gets the value in one of the arrays corresponding to the entered digit
+		const ones = ["","one","two","three","four","five","six","seven","eight","nine"];
+		const teens = ["","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"];
+		const tens = ["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
+		if(num == 0)
+		{ // Could probably remove this test and add "0" to the ones array
+			words  = "zero";
+			return words;
+		}
+
+		// Thousands
+		if (num >= 1000)
+		{
+			t  = Math.floor(num / 1000); //Makes a whole number
+			words = ones[t] + " thousand " // Gets the word from the array and adds " thousand "
+			num = num % 1000; //Gets the remainder of num divided by 1000
+		}
+
+		// Hundreds
+		if (num >= 100)
+		{
+			t = Math.floor(num / 100);
+			words = words + ones[t] + " hundred ";
+			num = num % 100; // Gets the remainder after being divided by 100
+		}
+
+		// Tens and units
+		if (num >= 20)
+		{
+			t = Math.floor(num / 10);
+			words = words + tens[t] + " ";
+			num = num % 10;
+		}
+		else if(num >= 10)
+		{
+			words = words + teens[num - 9] + " ";
+			num = 0;
+		}
+		if (num > 0)
+		{
+			words = words + ones[num];
+		}
+		return words;
+	}
+	function processNumThree(result)
+	{
+		let words = ""; // Used to return the converted result
+		let checkZeros; // Used to look for "0"s in a number
+		let processNum; // Gets the word(s) returned from the digitsToWords function
+		let num = result; // Starts with the value passed to the function
+		let hundreds = num.substring(0,1);
+		// The hundreds variable gets the first   digit
+		let tens = num.substring(1,3)
+		// The tens variable gets the last two digits
+		words = digitsToWords(hundreds);
+		// The first  digit is  converted to words
+		words = words +  " hundred ";
+		checkZeros = num.substring(1,3);
+		// Checks whether the rest of the digits are zeros
+		if(checkZeros == "00")
+		{
+			return words; // And that concludes the task of the function
+		}
+		if(tens == "00")
+		{
+			return words
+		}
+		if(result.substring(1,2) == "0")
+		{
+			tens = result.substring(2,3);
+		}
+		processNum = digitsToWords(tens);
+		words = words + ` and ${processNum}`;
+		return words;
+	}
+	function processNumFour(result)
+	{
+		let words = ""; // Used to return the converted result
+		let checkZeros; // Used to look for "0"s in a number
+		let processNum; // Gets the word(s) returned from the digitsToWords function
+		let num = result; // Starts with the value passed to the function
+		let thousands = num.substring(0,1);
+		// The thousands variable gets the first digit of the submitted number
+		let hundreds = num.substring(1,2);
+		// The hundreds variable gets the second  digit
+		let tens = num.substring(2,4)
+		// The tens variable gets the last two digits
+		words = digitsToWords(thousands);
+		// The first  digit is  converted to words
+			words = words +  " thousand ";
+		checkZeros = num.substring(1,4);
+		// Checks whether the rest of the digits are zeros
+		if(checkZeros == "000")
+		{
+			return words; // And that concludes the task of the function
+		}
+		processNum = digitsToWords(hundreds);
+		if(processNum != 0)
+		{
+			words = words + `${processNum} hundred `
+		}
+		if(tens == "00")
+		{
+			return words
+		}
+		if(result.substring(2,3) == "0")
+		{
+			tens = result.substring(3,4);
+		}
+		processNum = digitsToWords(tens);
+		words = words + ` and ${processNum}`;
+		return words;
+	}
+	function processNumFive(result)
+	{
+		let words = ""; // Used to return the converted result
+		let checkZeros; // Used to look for "0"s in a number
+		let processNum; // Gets the word(s) returned from the digitsToWords function
+		let num = result; // Starts with the value passed to the function
+		let thousands = num.substring(0,2);
+		// The thousands variable gets the first two digits of the submitted number
+		let hundreds = num.substring(2,3);
+		// The hundreds variable gets the third digit
+		let tens = num.substring(3,5)
+		// The tens variable gets the last two digits
+		words = digitsToWords(thousands);
+		// The first two digits are converted to words
+		checkZeros = num.substring(2,5);
+		// Checks whether the rest of the digits are zeros
+		if(checkZeros == "000")
+		{
+			words = words +  " thousand ";
+			return words; // And that concludes the task of the function
+		}
+		words = words + ` thousand `;
+		if(hundreds != "0")
+		{ // The hundreds value is not zero 
+			processNum = digitsToWords(hundreds);
+			words = words + `${processNum} hundred `;
+			// The words variable has the converted hundreds value added along with " hundred "
+		}
+		checkZeros = result.substring(3,5);
+		// The last two digits are zeros
+		if(checkZeros == "00")
+		{
+			return words;
+		}
+		checkZeros = result.substring(3,4);
+		// Checks whether the second last digit is a zero 
+		if(checkZeros == 0)
+		{
+			tens = result.substring(4,5);
+			// Removes "0" from the tens variable by giving it just the last digit
+		}
+		processNum = digitsToWords(tens);
+		words = words + ` and ${processNum}`;
+		return words;
+	}
+	function processNumSix(result)
+	{ // Called when a six digit number has been entered.
+	// The same process as in processNumFive but a bit more complicated
+		let words = "";
+		let checkZeros;
+		let num = result;
+		let tenThou = num.substring(0,1);
+		let thousands = num.substring(1,3);
+		let hundreds = num.substring(3,4);
+		let tens = num.substring(4,6);
+		let processNum;
+		words = digitsToWords(tenThou);
+		checkZeros = num.substring(1,6);
+		if(checkZeros == "00000")
+		{
+			words = words + ` hundred thousand `;
+			return words;
+		}
+		checkZeros = num.substring(1,3);
+		if(checkZeros == "00")
+		{
+			words = words + ` hundred thousand `;
+		}
+		checkZeros = num.substring(1,2);
+		if(checkZeros == "0")
+		{
+			thousands = num.substring(2,3);
+		}
+		processNum = digitsToWords(thousands);
+		words = words + ` hundred and ${processNum} thousand `; 
+		checkZeros = num.substring(3,4);
+		if(checkZeros == "0")
+		{
+			hundreds ="";
+		}
+		else
+		{
+			processNum = digitsToWords(hundreds);
+			words = words + `${processNum} hundred `;
+		}
+		checkZeros = num.substring(4,6);
+		if(checkZeros == "00")
+		{
+			return words;
+		}
+		checkZeros = num.substring(4,5);
+		if(checkZeros == "0")
+		{
+			tens = num.substring(5,6);
+		}
+		processNum = digitsToWords(tens);
+		words = words + " and " + processNum;
+		return words;
+	}
+	function processNumSeven(result)
+	{
+		let words = "";
+		let checkZeros;
+		let num = result;
+		let mils = num.substring(0,1);
+		let tenThou = num.substring(1,2);
+		let thousands = num.substring(2,4);
+		let hundreds = num.substring(4,5);
+		let tens = num.substring(5,7)
+		let processNum;
+		words = digitsToWords(mils);
+		checkZeros = num.substring(1,7);
+		if(checkZeros == "000000")
+		{
+			words = words + ` million `;
+			return words;
+		}
+		checkZeros = num.substring(1,2);
+		if(checkZeros != "0")
+		{
+			processNum = digitsToWords(tenThou)
+			words = words + ` million ${processNum} hundred `;
+		}
+		else
+		{
+			tenThou = "";
+			words = words + ` million `;
+		}
+		checkZeros = num.substring(2,4);
+		if(checkZeros != "00")
+		{
+			checkZeros = num.substring(2,3);
+			if(checkZeros == "0")
+			{
+				thousands = num.substring(3,4);
+			}
+			processNum = digitsToWords(thousands);
+			words = words + ` and ${processNum} thousand `
+		}
+		else
+		{
+			words = words + ` thousand `;
+		}
+		checkZeros = num.substring(4,5);
+		if(checkZeros != "0")
+		{
+			processNum = digitsToWords(hundreds);
+			words = words + ` ${processNum} hundred `; 
+		}
+		checkZeros = num.substring(5,7);
+		if(checkZeros != "00")
+		{
+			checkZeros = num.substring(5,6);
+			if(checkZeros == "0")
+			{
+				tens = num.substring(6,7);
+			}
+			processNum = digitsToWords(tens);
+			words = words + ` and ${processNum}`
+		}
+	return words;
+	}
+	function decimalFix(decimals, decLengthCheck)
+	{
+		let num = decimals;
+		let count = decLengthCheck;
+		let words = " point ";
+		const ones = ["zero","one","two","three","four","five","six","seven","eight","nine"];
+		let increment = 0;
+		let hold;
+		for (let i=1;i<= count;i++)
+		{
+			hold = num.substring(increment,i);
+			increment = increment + 1;
+			//if (hold > 0)
+			//{
+				words = words + " " + ones[hold] + " " ;
+			//}
+		}
+	return words;
+	}
+
+	function escapeHTML(value)
+	{
+		return value
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#039;");
+	}
+
+	function highlightSpokenWord(index)
+	{
+		const showWords = document.getElementById("showWords");
+		const originalText = showWords.dataset.originalText || showWords.textContent;
+		const words = originalText.trim().split(/\s+/);
+
+		if(index < 0 || index >= words.length)
+		{
+			showWords.textContent = originalText;
+			return;
+		}
+
+		showWords.innerHTML = words.map((word, wordIndex) =>
+		{
+			const safeWord = escapeHTML(word);
+			if(wordIndex === index)
+			{
+				return `<strong class="current-spoken-word">${safeWord}</strong>`;
+			}
+			return safeWord;
+		}).join(" ");
+	}
+
+	function clearSpokenWordHighlight()
+	{
+		const showWords = document.getElementById("showWords");
+		const originalText = showWords.dataset.originalText;
+		if(originalText)
+		{
+			showWords.textContent = originalText;
+		}
+	}
+
+	function talkToMe()
+	{
+		clearSpokenWordHighlight();
+		const getWords = document.getElementById("showWords").innerHTML;
+		const utterance = new SpeechSynthesisUtterance(getWords);
+		speechSynthesis.speak(utterance);
+	}
+	function printOut(origResult, output)
+	{
+		const showWords = document.getElementById("showWords");
+		showWords.textContent = output;
+		showWords.dataset.originalText = output;
+	}
+	// The following block speaks each displayed word when the speakEach button is pressed
+	document.addEventListener('DOMContentLoaded', function()
+	{
+		let currentIndex = 0; // Keeps track of words to be spoken
+		const btn = document.getElementById("speakEach");
+		// Stores the name of the button
+		btn.addEventListener("click", () =>
+		{ // Listens for the speakEach button to be pressed
+			const showWords = document.getElementById("showWords");
+			let words = (showWords.dataset.originalText || showWords.textContent).trim().split(/\s+/);
+			// Retrieves the displayed words from the page
+			if(words.length === 0 || words[0] === "")
+			{
+				return;
+			}
+			if (currentIndex < words.length)
+			{  // Works through the displayed words
+				highlightSpokenWord(currentIndex);
+				const utterance = new SpeechSynthesisUtterance(words[currentIndex]);
+				window.speechSynthesis.speak(utterance);
+				// The above lines provide the speech and visual highlight
+				currentIndex++; // Increments the currentIndex variable
+				btn.textContent = currentIndex < words.length ?  "Next word": 'Speak each word one at a time';
+				// Switches the label on the button when starting and reaching the end of the string
+				if(currentIndex == words.length)
+				{ // Resets currentIndex when the last word is reached
+					currentIndex = 0;
+				}
+			}
+		});
+	});
+
+</script>
+</head>
+
+<body>
+	<h1>
+		Convert numbers to words
+	</h1>
+	<p>
+		You can enter a number with  up to seven digits.  That includes numbers with  a decimal point with any number of  following digits.  Numbers starting with a dollar sign are fine, as are numbers that include commas to break up the number.  Numbers can be entered from the keyboard or copied and pasted.
+	</p>
+	<p>
+		<label for="inputNumber">Put in a number up to seven  digits</label>
+		<input id="inputNumber" type="text" name="provideDigits" value="">
+	</p>
+	<p>
+		<button type = "button" onclick = "convertMe(1)">Convert to a whole number</button>
+		<button type = "button" onclick = "convertMe(2)">Convert each digit separately</button>
+	</p>
+
+	<h2>Result</h2>
+	<p id="showWords" aria-live = "polite">
+
+	</p>
+	<p>
+		<button type="button" disabled id = "speakIt" onclick = "talkToMe()">Speak the converted number</button>
+	</p>
+	<p>
+		<button type = "button" disabled id = "speakEach">Speak each word one at a time</button>
+	</p>
+	<div id="storeIt">
+
+	</div>
+</body>
+</html>
