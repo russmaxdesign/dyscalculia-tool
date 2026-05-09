@@ -82,6 +82,7 @@ button:enabled {
 	border: 1px solid rgba(0,255,255,1);
 }
 </style>
+
 <script>
 	"use strict"
 	// The following toggles the speakIt button from disabled to enabled once the showWords paragraph  contains text.
@@ -152,6 +153,8 @@ button:enabled {
 			}
 			result = removeComma; // Now result is stripped of commas
 		}
+		document.getElementById("storeIt").innerHTML = result;
+		// The storeIt div holds the number for speaking  digits individually
 		decCheck = result.search(/[.]{1}/);
 		// Regular expression search for a decimal point in results variable
 		if(decCheck != "-1")
@@ -165,9 +168,10 @@ button:enabled {
 			// decOutput gets the converted digits to the right of the decimal point returned from decimalFix, including "point"
 		}
 		lengthCheck = result.length; // Gets the length of result variable so as to send to the relevant function
-		if(lengthCheck > 8)
+		if(lengthCheck > 7)
 		{
-			choice = 2;
+			document.getElementById("showWords").innerHTML = "The number before the decimal point cannot be more than seven digits";
+			return;
 		}
 		if(choice == 2)
 		{ // Output will be single words (no hundreds etc)
@@ -212,13 +216,6 @@ button:enabled {
 		if(lengthCheck == 7)
 		{ //Ditto again
 			retrieve = processNumSeven(result)
-			output = retrieve + decOutput + dollars;
-			printOut(origResult, output);
-			return;
-		}
-		if(lengthCheck == 8)
-		{
-			retrieve = processNumEight(result)
 			output = retrieve + decOutput + dollars;
 			printOut(origResult, output);
 			return;
@@ -489,37 +486,32 @@ button:enabled {
 			words = words + ` million `;
 			return words;
 		}
-		checkZeros = num.substring(1,4);
-		if(checkZeros != "000")
+		checkZeros = num.substring(1,2);
+		if(checkZeros != "0")
 		{
-			checkZeros = num.substring(1,2);
-			if(checkZeros != "0")
-			{
-				processNum = digitsToWords(tenThou)
-				words = words + ` million ${processNum} hundred `;
-			}
-			else
-			{
-				tenThou = "";
-				words = words + ` million `;
-			}
-			checkZeros = num.substring(2,4);
-			if(checkZeros != "00")
-			{
-				checkZeros = num.substring(2,3);
-				if(checkZeros == "0")
-				{
-					thousands = num.substring(3,4);
-				}
-				processNum = digitsToWords(thousands);
-				words = words + ` ${processNum} thousand `
-			}
-			else
-			{
-				words = words + ` thousand `;
-			}
+			processNum = digitsToWords(tenThou)
+			words = words + ` million ${processNum} hundred `;
 		}
-		else words += ` million `;
+		else
+		{
+			tenThou = "";
+			words = words + ` million `;
+		}
+		checkZeros = num.substring(2,4);
+		if(checkZeros != "00")
+		{
+			checkZeros = num.substring(2,3);
+			if(checkZeros == "0")
+			{
+				thousands = num.substring(3,4);
+			}
+			processNum = digitsToWords(thousands);
+			words = words + ` and ${processNum} thousand `
+		}
+		else
+		{
+			words = words + ` thousand `;
+		}
 		checkZeros = num.substring(4,5);
 		if(checkZeros != "0")
 		{
@@ -539,75 +531,6 @@ button:enabled {
 		}
 	return words;
 	}
-	function processNumEight(result)
-	{
-		let words = "";
-		let checkZeros;
-		let num = result;
-		let mils = num.substring(0,2);
-		let tenThou = num.substring(2,3);
-		let thousands = num.substring(3,5);
-		let hundreds = num.substring(5,6);
-		let tens = num.substring(6,8);
-		let processNum;
-		words = digitsToWords(mils);
-		checkZeros = num.substring(2,8);
-		if(checkZeros == "000000")
-		{
-			words = words + ` million `;
-			return words;
-		}
-		checkZeros = num.substring(2,5);
-		if(checkZeros != "000")
-		{
-			checkZeros = num.substring(2,3);
-			if(checkZeros != "0")
-			{
-				processNum = digitsToWords(tenThou)
-				words = words + ` million ${processNum} hundred `;
-			}
-			else
-			{
-				tenThou = "";
-				words = words + ` million `;
-			}
-			checkZeros = num.substring(3,5 );
-			if(checkZeros != "00")
-			{
-				checkZeros = num.substring(3,4);
-				if(checkZeros == "0")
-				{
-					thousands = num.substring(4,5);
-				}
-				processNum = digitsToWords(thousands);
-				words = words + ` ${processNum} thousand `
-			}
-			else
-			{
-				words = words + ` thousand `;
-			}
-		}
-		else words += ` million `;
-		checkZeros = num.substring(5,6);
-		if(checkZeros != "0")
-		{
-			processNum = digitsToWords(hundreds);
-			words = words + ` ${processNum} hundred `; 
-		}
-		checkZeros = num.substring(6,8);
-		if(checkZeros != "00")
-		{
-			checkZeros = num.substring(6,7);
-			if(checkZeros == "0")
-			{
-				tens = num.substring(7,8);
-			}
-			processNum = digitsToWords(tens);
-			words = words + ` and ${processNum}`
-		}
-	return words;
-	}
-
 	function decimalFix(decimals, decLengthCheck)
 	{
 		let num = decimals;
@@ -724,19 +647,18 @@ button:enabled {
 		Convert numbers to words
 	</h1>
 	<p>
-		Enter a number to be converted to words.  That includes numbers with  a decimal point with any number of  following digits.  Numbers starting with a dollar sign are fine, as are numbers that include commas to break up the number.  Numbers can be entered from the keyboard or copied and pasted.
+		You can enter a number with  up to seven digits.  That includes numbers with  a decimal point with any number of  following digits.  Numbers starting with a dollar sign are fine, as are numbers that include commas to break up the number.  Numbers can be entered from the keyboard or copied and pasted.
 	</p>
 	<p>
-		Numbers with up to eight digits before the decimal point can be converted to a whole number or as separate digits.  Larger numbers can only be converted to separate digits, even if you press the Whole Number button.
-	</p>
-	<p>
-		<label for="inputNumber">Put in a number</label>
+		<label for="inputNumber">Put in a number up to seven  digits</label>
 		<input id="inputNumber" type="text" name="provideDigits" value="">
 	</p>
 	<p>
 		<button type = "button" onclick = "convertMe(1)">Convert to a whole number</button>
 		<button type = "button" onclick = "convertMe(2)">Convert each digit separately</button>
 	</p>
+
+	<h2>Result</h2>
 	<p id="showWords" aria-live = "polite">
 
 	</p>
@@ -749,5 +671,7 @@ button:enabled {
 	<div id="storeIt">
 
 	</div>
+
+	<p>This tool was created by Andrew Downie, 2026</p>
 </body>
 </html>
