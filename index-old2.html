@@ -420,7 +420,7 @@ button:enabled {
 	}
 	function processNumSix(result)
 	{ // Called when a six digit number has been entered.
-		// The same process as in processNumFive but a bit more complicated
+	// The same process as in processNumFive but a bit more complicated
 		let words = "";
 		let checkZeros;
 		let num = result;
@@ -437,22 +437,17 @@ button:enabled {
 			return words;
 		}
 		checkZeros = num.substring(1,3);
-		if(checkZeros != "00")
+		if(checkZeros == "00")
 		{
-			checkZeros = num.substring(1,3);
-			if(checkZeros == "00")
-			{
-				words = words + ` hundred thousand `;
-			}
-			checkZeros = num.substring(1,2);
-			if(checkZeros == "0")
-			{
-				thousands = num.substring(2,3);
-			}
-			processNum = digitsToWords(thousands);
-			words = words + ` hundred and ${processNum} thousand `; 
+			words = words + ` hundred thousand `;
 		}
-		else words += ` hundred thousand `;
+		checkZeros = num.substring(1,2);
+		if(checkZeros == "0")
+		{
+			thousands = num.substring(2,3);
+		}
+		processNum = digitsToWords(thousands);
+		words = words + ` hundred and ${processNum} thousand `; 
 		checkZeros = num.substring(3,4);
 		if(checkZeros == "0")
 		{
@@ -502,7 +497,7 @@ button:enabled {
 			if(checkZeros != "0")
 			{
 				processNum = digitsToWords(tenThou)
-				words += ` million ${processNum} hundred `;
+				words = words + ` million ${processNum} hundred `;
 			}
 			else
 			{
@@ -518,7 +513,7 @@ button:enabled {
 					thousands = num.substring(3,4);
 				}
 				processNum = digitsToWords(thousands);
-				words += ` and ${processNum} thousand `
+				words = words + ` ${processNum} thousand `
 			}
 			else
 			{
@@ -570,12 +565,12 @@ button:enabled {
 			if(checkZeros != "0")
 			{
 				processNum = digitsToWords(tenThou)
-				words += ` million ${processNum} hundred `;
+				words = words + ` million ${processNum} hundred `;
 			}
 			else
 			{
 				tenThou = "";
-				words += ` million `;
+				words = words + ` million `;
 			}
 			checkZeros = num.substring(3,5 );
 			if(checkZeros != "00")
@@ -586,7 +581,7 @@ button:enabled {
 					thousands = num.substring(4,5);
 				}
 				processNum = digitsToWords(thousands);
-				words += ` and ${processNum} thousand `
+				words = words + ` ${processNum} thousand `
 			}
 			else
 			{
