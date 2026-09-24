@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+ <link rel="shortcut icon" href="favicon.ico">
 <title>Convert numbers to words</title>
 <style>
 	body {
@@ -106,7 +107,7 @@
 	let choice; //Gets 1 for convert to detailed words and 2 for convert to single words
 	function convertMe(choice)
 	{ // Called when the Submit button is pressed
-		let result = ""; // Gets the number entered by the user
+		let result; // Gets the number entered by the user
 		let origResult; //Keeps the original entered number in case it contains decimals (they are removed from result variable)
 		let retrieve; // Gets the value returned from any of the functions called to do the conversion
 		let output; // Sends both original and converted results to the page
@@ -126,108 +127,105 @@
 		result = document.getElementById("inputNumber").value;
 		// Now holds the number entered by the user
 		origResult = result; // Keeps original entry in case of decimals - they get stripped out of result variable
-		let theCapture = "";  // Receives   numbers stripped out of material that has been entered
-		const NumberPattern  = /(\$?\d+(?:[,]\d+)*(?:[.]\d+)?)/;     // captures commas before optional decimal point
-		// Thank you GB
-		theCapture = result.split(NumberPattern );
-		// Creates an array in which text and numbers are separated
-		result = ""; // Clears result variable before receiving one or more numbers in the following loop
-		document.getElementById("showWords").innerHTML = "";
-		// Clears the div in case anything left there from previously (Firefox doesn't clear when refreshed)
-		for (let i= 0;i <= theCapture.length  ;i+= 2)
-		{ // Two step loop.  Text from even numbers and numbers from odd numbers.
-			document.getElementById("showWords").innerHTML += `${theCapture[i]} `;
-			// Sends each text string to the showWords div
-			result = theCapture[i+1];
-			// result receives each number from the theCapture array
-			//result = storeNum ? storeNum[i].trim() : "";
-			// The above line converts to a string, no longer needed but keeping just in case
-			dollars = result.substring(0,1); // Looks for a dollar sign as the first character
-			if(dollars == "$")
-			{
-				result = result.substring(1,); // Removes the dollar sign from the variable
-				dollars = " dollars";
-			}
-			else dollars = "";
-			result = result.replace(/[^0-9.]/g, "");
-			//Removes any stray characters, including commas
-			decCheck = result.search(/[.]{1}/);
-			// Regular expression search for a decimal point in results variable
-			if(decCheck != "-1")
-			{ // A decimal point has been found
-				decimals = result.substring(decCheck + 1,);
-				// The decimals variable holds digits to the right of the decimal point 
-				decLengthCheck = decimals.length; // Determines how many digits in the decimals variable
-				result = result.substring(0,decCheck);
-				// The result variable now holds only digits to the left of the decimal point
-				decOutput = decimalFix(decimals, decLengthCheck);
-				// decOutput gets the converted digits to the right of the decimal point returned from decimalFix, including "point"
-			}
-			else decOutput = "";
-			lengthCheck = result.length; // Gets the length of result variable so as to send to the relevant function
-			if(lengthCheck > 8)
-			{
-				choice = 2; // Numbers longer than 8 digits only processed as single words
-			}
-			if(choice == 2)
-			{ // Output will be single words (no hundreds etc)
-				singleWords(lengthCheck, result, decOutput, dollars);
-				continue;
-			}
-			if(lengthCheck == 3)
-			{ // A three digit entry is sent to the processNumThree function and similar for four, five etc entries
-				retrieve = processNumThree(result);
-				// The entry converted to words is returned
-				output = retrieve + decOutput + dollars;
-				// The output variable now holds converted material, including decimals if any
-				printOut(output);
-				// Sends information to the showWords div
-				continue
-			}
-			if(lengthCheck == 4)
-			{
-				retrieve = processNumFour(result);
-				output = retrieve + decOutput + dollars;
-				// The output variable now holds converted material, including decimals if any
-				printOut(output);
-				// Sends information to the showWords div
-				continue
-			}
-			if(lengthCheck == 5)
-			{
-				retrieve = processNumFive(result)
-				output = retrieve + decOutput + dollars;
-				// The output variable now holds converted material, including decimals if any
-				printOut(output);
-				// Sends information to the showWords div
-				continue
-			}
-			if(lengthCheck == 6)
-			{ // As above
-				retrieve = processNumSix(result)
-				output =  retrieve + decOutput + dollars;
-				printOut(output);
-				continue
-			}
-			if(lengthCheck == 7)
-			{ //Ditto again
-				retrieve = processNumSeven(result)
-				output = retrieve + decOutput + dollars;
-				printOut(output);
-				continue;
-			}
-			if(lengthCheck == 8)
-			{
-				retrieve = processNumEight(result)
-				output = retrieve + decOutput + dollars;
-				printOut(output);
-				continue;
-			}
-			// The following    used if two  digits as all  work done in the function.
-			retrieve = digitsToWords(result);
-			output =  retrieve + decOutput + dollars;
-			printOut(output);
+		dollars = result.substring(0,1); // Looks for a dollar sign as the first character
+		if(dollars == "$")
+		{
+			result = result.substring(1,); // Removes the dollar sign from the variable
+			dollars = " dollars";
 		}
+		else dollars = "";
+		commaCheck = result.search(/[,]{1}/);
+		// Regular expression search for a comma (,);
+		if(commaCheck > -1)
+		{ //A comma has been found;
+			lengthCheck = result.length; // Gets the length of result variable for the loop count
+			let count = 0;
+			for (let i=0;i<= lengthCheck - 1;i++)
+			{ //Checks each character to see if it is a comma
+				count = count + 1;
+				myTemp = result.substring(i,count);
+				if(myTemp != ",") // It is not a comma
+				{
+					removeComma = removeComma + myTemp; // Adds anything that is not a comma to removeComma
+				}
+			}
+			result = removeComma; // Now result is stripped of commas
+		}
+		decCheck = result.search(/[.]{1}/);
+		// Regular expression search for a decimal point in results variable
+		if(decCheck != "-1")
+		{ // A decimal point has been found
+			decimals = result.substring(decCheck + 1,);
+			// The decimals variable holds digits to the right of the decimal point 
+			decLengthCheck = decimals.length; // Determines how many digits in the decimals variable
+			result = result.substring(0,decCheck);
+			// The result variable now holds only digits to the left of the decimal point
+			decOutput = decimalFix(decimals, decLengthCheck);
+			// decOutput gets the converted digits to the right of the decimal point returned from decimalFix, including "point"
+		}
+		lengthCheck = result.length; // Gets the length of result variable so as to send to the relevant function
+		if(lengthCheck > 8)
+		{
+			choice = 2;
+		}
+		if(choice == 2)
+		{ // Output will be single words (no hundreds etc)
+			singleWords(lengthCheck, result, decOutput, dollars);
+			return;
+		}
+		if(lengthCheck == 3)
+		{ // A three digit entry is sent to the processNumThree function and similar for four, five etc entries
+			retrieve = processNumThree(result);
+			// The entry converted to words is returned
+			output = retrieve + decOutput + dollars;
+			// The output variable now holds converted material, including decimals if any
+			printOut(origResult, output);
+			// Sends information to the showWords div
+			return
+		}
+		if(lengthCheck == 4)
+		{
+			retrieve = processNumFour(result);
+			output = retrieve + decOutput + dollars;
+			// The output variable now holds converted material, including decimals if any
+			printOut(origResult, output);
+			// Sends information to the showWords div
+			return
+		}
+		if(lengthCheck == 5)
+		{
+			retrieve = processNumFive(result)
+			output = retrieve + decOutput + dollars;
+			// The output variable now holds converted material, including decimals if any
+			printOut(origResult, output);
+			// Sends information to the showWords div
+			return
+		}
+		if(lengthCheck == 6)
+		{ // As above
+			retrieve = processNumSix(result)
+			output =  retrieve + decOutput + dollars;
+			printOut(origResult, output);
+			return
+		}
+		if(lengthCheck == 7)
+		{ //Ditto again
+			retrieve = processNumSeven(result)
+			output = retrieve + decOutput + dollars;
+			printOut(origResult, output);
+			return;
+		}
+		if(lengthCheck == 8)
+		{
+			retrieve = processNumEight(result)
+			output = retrieve + decOutput + dollars;
+			printOut(origResult, output);
+			return;
+		}
+		// The following    used if two  digits as all  work done in the function.
+		retrieve = digitsToWords(result);
+		output =  retrieve + decOutput + dollars;
+		printOut(origResult, output);
 	}
 	function singleWords(fullLength, result, decOutput, dollars)
 	{ // This function used for single word output - just needs the loop to process
@@ -250,10 +248,9 @@
 			}
 		}
 		words = words + decOutput + dollars; // Everything put together
-		document.getElementById("showWords").innerHTML += `${words} `;
-		//const showWords = document.getElementById("showWords");
-		//showWords.textContent = words;
-		//showWords.dataset.originalText = words;
+		const showWords = document.getElementById("showWords");
+		showWords.textContent = words;
+		showWords.dataset.originalText = words;
 		// Result sent to the page
 	}
 	function  digitsToWords(result)
@@ -650,6 +647,7 @@
 		const showWords = document.getElementById("showWords");
 		const originalText = showWords.dataset.originalText || showWords.textContent;
 		const words = originalText.trim().split(/\s+/);
+
 		if(index < 0 || index >= words.length)
 		{
 			showWords.textContent = originalText;
@@ -680,16 +678,15 @@
 	function talkToMe()
 	{
 		clearSpokenWordHighlight();
-		const getWords = document.getElementById("showWords").textContent.trim();
+		const getWords = document.getElementById("showWords").innerHTML;
 		const utterance = new SpeechSynthesisUtterance(getWords);
 		speechSynthesis.speak(utterance);
 	}
-	function printOut(output)
+	function printOut(origResult, output)
 	{
-		document.getElementById("showWords").innerHTML += `${output} `;
-		//const showWords = document.getElementById("showWords");		
-		//showWords.textContent = output;
-		//showWords.dataset.originalText = output;
+		const showWords = document.getElementById("showWords");
+		showWords.textContent = output;
+		showWords.dataset.originalText = output;
 	}
 	// The following block speaks each displayed word when the speakEach button is pressed
 	document.addEventListener('DOMContentLoaded', function()
@@ -699,8 +696,8 @@
 		// Stores the name of the button
 		btn.addEventListener("click", () =>
 		{ // Listens for the speakEach button to be pressed
-			const myWords = document.getElementById("showWords");
-			let words = (myWords.dataset.originalText || showWords.textContent).trim().split(/\s+/);
+			const showWords = document.getElementById("showWords");
+			let words = (showWords.dataset.originalText || showWords.textContent).trim().split(/\s+/);
 			// Retrieves the displayed words from the page
 			if(words.length === 0 || words[0] === "")
 			{
@@ -722,6 +719,7 @@
 			}
 		});
 	});
+
 </script>
 </head>
 
@@ -730,19 +728,11 @@
 		Convert numbers to words
 	</h1>
 	<p>
-		Enter text containing one or more numbers or just numbers.  Each number will be converted to words and shown with any text.  That includes numbers with  a decimal point with any number of  following digits.  Numbers starting with a dollar sign are fine, as are numbers that include commas to break up the number.  Either enter  from the keyboard or copied and paste.
+		Enter a number to be converted to words.  That includes numbers with  a decimal point with any number of  following digits.  Numbers starting with a dollar sign are fine, as are numbers that include commas to break up the number.  Numbers can be entered from the keyboard or copied and pasted.
 	</p>
 	<p>
 		Numbers with up to eight digits before the decimal point can be converted to a whole number or as separate digits.  Larger numbers can only be converted to separate digits, even if you press the Whole Number button.
 	</p>
-	<h2>
-		Try these examples
-	</h2>
-	<ul>
-		<li><em>1234567</em></li>
-		<li><em>There are 13 apples and 15 bananas</em></li>
-		<li><em>I have $4.35 in my account.</em></li>
-	</ul>
 	<p>
 		<label for="inputNumber">Put in a number</label>
 		<input id="inputNumber" type="text" name="provideDigits" value="">
@@ -760,5 +750,8 @@
 	<p>
 		<button type = "button" disabled id = "speakEach">Speak each word one at a time</button>
 	</p>
+	<div id="storeIt">
+
+	</div>
 </body>
 </html>
